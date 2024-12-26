@@ -1,7 +1,6 @@
 export * from './cn';
 export * from './copyFileAsync';
 export * from './encodeEmoji';
-export * from './evaluateCommand';
 export * from './existsAsync';
 export * from './fetchWithTimeout';
 export * from './fieldWhenClause';
@@ -9,8 +8,6 @@ export * from './flattenObjectKeys';
 export * from './getDescriptionField';
 export * from './getExtensibilityScripts';
 export * from './getLocalizationFile';
-export * from './getPlatform';
-export * from './getShellPath';
 export * from './getTitleField';
 export * from './getWebviewJsFiles';
 export * from './ignoreMsgCommand';

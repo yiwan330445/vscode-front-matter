@@ -39,21 +39,17 @@ export class FieldsListener extends BaseListener {
       return;
     }
 
-    const isLocaleEnabled = await i18n.isLocaleEnabled(data.activePath);
     const activeLocale = await i18n.getLocale(data.activePath);
-    if (isLocaleEnabled && !activeLocale?.locale) {
+    if (!activeLocale?.locale) {
       return;
     }
 
     PagesListener.getPagesData(false, async (pages) => {
-      const fuseKeys: Fuse.FuseOptionKey[] = [{ name: 'fmContentType', weight: 1 }];
-
-      if (isLocaleEnabled && data.sameLocale) {
-        fuseKeys.push({ name: 'fmLocale.locale', weight: 1 });
-      }
-
       const fuseOptions: Fuse.IFuseOptions<Page> = {
-        keys: fuseKeys,
+        keys: [
+          { name: 'fmContentType', weight: 1 },
+          ...(data.sameLocale ? [{ name: 'fmLocale.locale', weight: 1 }] : [])
+        ],
         findAllMatches: true,
         threshold: 0
       };
@@ -64,14 +60,11 @@ export class FieldsListener extends BaseListener {
       );
       const fuseIndex = Fuse.parseIndex(pagesIndex);
       const fuse = new Fuse(pages || [], fuseOptions, fuseIndex);
-
-      const andExpression: Fuse.Expression[] = [{ fmContentType: data.type ?? '' }];
-      if (isLocaleEnabled && activeLocale?.locale && data.sameLocale) {
-        andExpression.push({ 'fmLocale.locale': activeLocale.locale });
-      }
-
       const results = fuse.search({
-        $and: andExpression
+        $and: [
+          { fmContentType: data.type! },
+          ...(data.sameLocale ? [{ 'fmLocale.locale': activeLocale.locale }] : [])
+        ]
       });
       const pageResults = results.map((page) => page.item);
 

@@ -1,5 +1,5 @@
 import { Settings } from './SettingsHelper';
-import { CommandType } from './../models/PanelSettings';
+import { CommandType, EnvironmentType } from './../models/PanelSettings';
 import { CustomScript as ICustomScript, ScriptType } from '../models/PanelSettings';
 import { window, env as vscodeEnv, ProgressLocation, Uri, commands } from 'vscode';
 import { ArticleHelper, Logger, MediaHelpers } from '.';
@@ -13,8 +13,9 @@ import { Dashboard } from '../commands/Dashboard';
 import { DashboardCommand } from '../dashboardWebView/DashboardCommand';
 import { ParsedFrontMatter } from '../parsers';
 import { SETTING_CUSTOM_SCRIPTS } from '../constants';
-import { evaluateCommand, existsAsync, getPlatform } from '../utils';
-import { LocalizationKey, localize } from '../localization';
+import { existsAsync } from '../utils';
+import * as l10n from '@vscode/l10n';
+import { LocalizationKey } from '../localization';
 
 export class CustomScript {
   /**
@@ -100,7 +101,7 @@ export class CustomScript {
       );
     } else {
       Notifications.warning(
-        localize(LocalizationKey.helpersCustomScriptSingleRunArticleWarning, script.title)
+        l10n.t(LocalizationKey.helpersCustomScriptSingleRunArticleWarning, script.title)
       );
     }
   }
@@ -116,7 +117,7 @@ export class CustomScript {
 
     if (!folders || folders.length === 0) {
       Notifications.warning(
-        localize(LocalizationKey.helpersCustomScriptBulkRunNoFilesWarning, script.title)
+        l10n.t(LocalizationKey.helpersCustomScriptBulkRunNoFilesWarning, script.title)
       );
       return;
     }
@@ -126,7 +127,7 @@ export class CustomScript {
     window.withProgress(
       {
         location: ProgressLocation.Notification,
-        title: localize(LocalizationKey.helpersCustomScriptExecuting, script.title),
+        title: l10n.t(LocalizationKey.helpersCustomScriptExecuting, script.title),
         cancellable: false
       },
       async (_, __) => {
@@ -172,7 +173,7 @@ export class CustomScript {
   ): Promise<void> {
     if (!path) {
       Notifications.error(
-        localize(LocalizationKey.helpersCustomScriptRunMediaScriptNoFolderWarning, script.title)
+        l10n.t(LocalizationKey.helpersCustomScriptRunMediaScriptNoFolderWarning, script.title)
       );
       return;
     }
@@ -181,7 +182,7 @@ export class CustomScript {
       window.withProgress(
         {
           location: ProgressLocation.Notification,
-          title: localize(LocalizationKey.helpersCustomScriptExecuting, script.title),
+          title: l10n.t(LocalizationKey.helpersCustomScriptExecuting, script.title),
           cancellable: false
         },
         async () => {
@@ -308,10 +309,7 @@ export class CustomScript {
               throw new Error(`Couldn't update article.`);
             }
             Notifications.info(
-              localize(
-                LocalizationKey.helpersCustomScriptShowOutputFrontMatterSuccess,
-                script.title
-              )
+              l10n.t(LocalizationKey.helpersCustomScriptShowOutputFrontMatterSuccess, script.title)
             );
           }
         } else if (data.fmAction) {
@@ -347,12 +345,10 @@ export class CustomScript {
           window
             .showInformationMessage(
               `${script.title}: ${output}`,
-              localize(LocalizationKey.helpersCustomScriptShowOutputCopyOutputAction)
+              l10n.t(LocalizationKey.helpersCustomScriptShowOutputCopyOutputAction)
             )
             .then((value) => {
-              if (
-                value === localize(LocalizationKey.helpersCustomScriptShowOutputCopyOutputAction)
-              ) {
+              if (value === l10n.t(LocalizationKey.helpersCustomScriptShowOutputCopyOutputAction)) {
                 vscodeEnv.clipboard.writeText(output);
               }
             });
@@ -360,7 +356,7 @@ export class CustomScript {
       }
     } else {
       Notifications.info(
-        localize(LocalizationKey.helpersCustomScriptShowOutputSuccess, script.title)
+        l10n.t(LocalizationKey.helpersCustomScriptShowOutputSuccess, script.title)
       );
     }
   }
@@ -377,16 +373,12 @@ export class CustomScript {
     wsPath: string,
     args: string
   ): Promise<string> {
-    const platform = getPlatform();
+    const osType = os.type();
 
     // Check the command to use
     let command = script.nodeBin || 'node';
     if (script.command && script.command !== CommandType.Node) {
       command = script.command;
-    }
-
-    if (script.command === CommandType.Node && platform !== 'windows') {
-      command = await evaluateCommand(CommandType.Node);
     }
 
     let scriptPath = join(wsPath, script.script);
@@ -396,15 +388,19 @@ export class CustomScript {
 
     // Check if there is an environments overwrite required
     if (script.environments) {
-      const environment = script.environments.find((e) => e.type === platform);
+      let crntType: EnvironmentType | null = null;
+      if (osType === 'Windows_NT') {
+        crntType = 'windows';
+      } else if (osType === 'Darwin') {
+        crntType = 'macos';
+      } else {
+        crntType = 'linux';
+      }
+
+      const environment = script.environments.find((e) => e.type === crntType);
       if (environment && environment.script && environment.command) {
         if (await CustomScript.validateCommand(environment.command)) {
           command = environment.command;
-
-          if (command === CommandType.Node && platform !== 'windows') {
-            command = await evaluateCommand(CommandType.Node);
-          }
-
           scriptPath = join(wsPath, environment.script);
           if (environment.script.includes(WORKSPACE_PLACEHOLDER)) {
             scriptPath = Folders.getAbsFilePath(environment.script);
@@ -418,12 +414,12 @@ export class CustomScript {
       throw new Error(`Script not found: ${scriptPath}`);
     }
 
-    if (platform === 'windows' && command.toLowerCase() === 'powershell') {
+    if (osType === 'Windows_NT' && command.toLowerCase() === 'powershell') {
       command = `${command} -File`;
     }
 
     const fullScript = `${command} "${scriptPath}" ${args}`;
-    Logger.info(localize(LocalizationKey.helpersCustomScriptExecuting, fullScript));
+    Logger.info(l10n.t(LocalizationKey.helpersCustomScriptExecuting, fullScript));
 
     const output: string = await CustomScript.executeScriptAsync(fullScript, wsPath);
 
@@ -506,7 +502,7 @@ export class CustomScript {
 
       return true;
     } catch (e) {
-      Logger.error(localize(LocalizationKey.helpersCustomScriptValidateCommandError, command));
+      Logger.error(l10n.t(LocalizationKey.helpersCustomScriptValidateCommandError, command));
       return false;
     }
   }

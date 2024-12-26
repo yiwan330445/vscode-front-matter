@@ -12,7 +12,7 @@ import {
 } from '../../constants';
 import { SettingsListener } from './SettingsListener';
 import { Terminal } from '../../services';
-import { evaluateCommand, existsAsync, getPlatform, readFileAsync } from '../../utils';
+import { existsAsync, readFileAsync } from '../../utils';
 import { join } from 'path';
 
 export class SsgListener extends BaseListener {
@@ -170,12 +170,7 @@ export class SsgListener extends BaseListener {
       workspace.fs.copy(scriptPath, tempScriptPath, { overwrite: true });
     }
 
-    let nodeExecPath = 'node';
-    const platform = getPlatform();
-    if (platform !== 'windows') {
-      nodeExecPath = await evaluateCommand('node');
-    }
-    const fullScript = `${nodeExecPath} "${tempScriptPath.fsPath}" "${contentConfigFile.fsPath}"`;
+    const fullScript = `node "${tempScriptPath.fsPath}" "${contentConfigFile.fsPath}"`;
 
     try {
       const result: string = await SsgListener.executeScript(fullScript, wsFolder?.fsPath || '');

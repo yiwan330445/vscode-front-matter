@@ -4,7 +4,8 @@ import { CommandLineIcon, PencilIcon, TrashIcon, ChevronDownIcon, XMarkIcon, Eye
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { MultiSelectedItemsAtom, PagedItems, SelectedItemActionAtom, SelectedMediaFolderSelector, SettingsSelector } from '../../state';
 import { ActionsBarItem } from './ActionsBarItem';
-import { LocalizationKey, localize } from '../../../localization';
+import * as l10n from '@vscode/l10n';
+import { LocalizationKey } from '../../../localization';
 import { Alert } from '../Modals/Alert';
 import { messageHandler } from '@estruyf/vscode/dist/client';
 import { DashboardMessage } from '../../DashboardMessage';
@@ -67,14 +68,8 @@ export const ActionsBar: React.FunctionComponent<IActionsBarProps> = ({
   }, [selectedFiles]);
 
   const selectAllItems = React.useCallback(() => {
-    const allSelected = [...selectedFiles, ...pagedItems];
-    setSelectedFiles(Array.from(new Set(allSelected)));
-  }, [selectedFiles, pagedItems]);
-
-  const hasAllItemsSelectedOnPage = React.useMemo(() => {
-    const selectedItemsOnPage = selectedFiles.filter((file) => pagedItems.includes(file));
-    return selectedItemsOnPage.length >= pagedItems.length;
-  }, [selectedFiles, pagedItems]);
+    setSelectedFiles([...pagedItems]);
+  }, [pagedItems]);
 
   const languageActions = React.useMemo(() => {
     const actions: React.ReactNode[] = [];
@@ -97,7 +92,7 @@ export const ActionsBar: React.FunctionComponent<IActionsBarProps> = ({
               })
             }}>
             <LanguageIcon className={`mr-2 h-4 w-4`} aria-hidden={true} />
-            <span>{localize(LocalizationKey.commonTranslate)}</span>
+            <span>{l10n.t(LocalizationKey.commonTranslate)}</span>
           </ActionsBarItem>
         )
 
@@ -112,7 +107,7 @@ export const ActionsBar: React.FunctionComponent<IActionsBarProps> = ({
                   className='flex items-center text-[var(--vscode-tab-inactiveForeground)] hover:text-[var(--vscode-tab-activeForeground)]'
                 >
                   <LanguageIcon className="mr-2 h-4 w-4" aria-hidden={true} />
-                  <span>{localize(LocalizationKey.commonLanguages)}</span>
+                  <span>{l10n.t(LocalizationKey.commonLanguages)}</span>
                   <ChevronDownIcon className="ml-2 h-4 w-4" aria-hidden={true} />
                 </DropdownMenuTrigger>
 
@@ -168,7 +163,7 @@ export const ActionsBar: React.FunctionComponent<IActionsBarProps> = ({
             disabled={selectedFiles.length === 0}
           >
             <CommandLineIcon className="mr-2 h-4 w-4" aria-hidden={true} />
-            <span>{localize(LocalizationKey.commonScripts)}</span>
+            <span>{l10n.t(LocalizationKey.commonScripts)}</span>
             <ChevronDownIcon className="ml-2 h-4 w-4" aria-hidden={true} />
           </DropdownMenuTrigger>
 
@@ -202,10 +197,10 @@ export const ActionsBar: React.FunctionComponent<IActionsBarProps> = ({
           <ActionsBarItem
             disabled={selectedFiles.length === 0 || selectedFiles.length > 1}
             onClick={viewFile}
-            title={localize(LocalizationKey.commonView)}
+            title={l10n.t(LocalizationKey.commonView)}
           >
             <EyeIcon className="w-4 h-4 mr-2" aria-hidden="true" />
-            <span>{localize(LocalizationKey.commonView)}</span>
+            <span>{l10n.t(LocalizationKey.commonView)}</span>
           </ActionsBarItem>
 
           {
@@ -216,10 +211,10 @@ export const ActionsBar: React.FunctionComponent<IActionsBarProps> = ({
                   messageHandler.send(DashboardMessage.rename, selectedFiles[0]);
                   setSelectedFiles([]);
                 }}
-                title={localize(LocalizationKey.commonRename)}
+                title={l10n.t(LocalizationKey.commonRename)}
               >
                 <RenameIcon className="w-4 h-4 mr-2" aria-hidden="true" />
-                <span>{localize(LocalizationKey.commonRename)}</span>
+                <span>{l10n.t(LocalizationKey.commonRename)}</span>
               </ActionsBarItem>
             )
           }
@@ -233,10 +228,10 @@ export const ActionsBar: React.FunctionComponent<IActionsBarProps> = ({
                     path: selectedFiles[0],
                     action: 'edit'
                   })}
-                  title={localize(LocalizationKey.commonEdit)}
+                  title={l10n.t(LocalizationKey.commonEdit)}
                 >
                   <PencilIcon className="w-4 h-4 mr-2" aria-hidden="true" />
-                  <span>{localize(LocalizationKey.commonEdit)}</span>
+                  <span>{l10n.t(LocalizationKey.commonEdit)}</span>
                 </ActionsBarItem>
               </>
             )
@@ -250,10 +245,10 @@ export const ActionsBar: React.FunctionComponent<IActionsBarProps> = ({
             className='hover:text-[var(--vscode-statusBarItem-errorBackground)]'
             disabled={selectedFiles.length === 0}
             onClick={() => setShowAlert(true)}
-            title={localize(LocalizationKey.commonDelete)}
+            title={l10n.t(LocalizationKey.commonDelete)}
           >
             <TrashIcon className="w-4 h-4 mr-2" aria-hidden="true" />
-            <span>{localize(LocalizationKey.commonDelete)}</span>
+            <span>{l10n.t(LocalizationKey.commonDelete)}</span>
           </ActionsBarItem>
         </div>
 
@@ -263,33 +258,33 @@ export const ActionsBar: React.FunctionComponent<IActionsBarProps> = ({
               <ActionsBarItem
                 className='flex items-center hover:text-[var(--vscode-statusBarItem-warningBackground)]'
                 onClick={() => setSelectedFiles([])}
-                title={localize(LocalizationKey.dashboardHeaderActionsBarItemsSelected, selectedFiles.length)}
+                title={l10n.t(LocalizationKey.dashboardHeaderActionsBarItemsSelected, selectedFiles.length)}
               >
                 <XMarkIcon className="w-4 h-4 mr-1" aria-hidden="true" />
-                <span>{localize(LocalizationKey.dashboardHeaderActionsBarItemsSelected, selectedFiles.length)}</span>
+                <span>{l10n.t(LocalizationKey.dashboardHeaderActionsBarItemsSelected, selectedFiles.length)}</span>
               </ActionsBarItem>
             )
           }
 
           <ActionsBarItem
-            disabled={hasAllItemsSelectedOnPage}
+            disabled={selectedFiles.length === pagedItems.length}
             onClick={selectAllItems}
-            title={localize(LocalizationKey.dashboardHeaderActionsBarSelectAll)}
+            title={l10n.t(LocalizationKey.dashboardHeaderActionsBarSelectAll)}
           >
             <div className='w-4 h-4 inline-flex items-center justify-center border border-[var(--vscode-sideBar-foreground)] group-hover:border-[var(--vscode-statusBarItem-warningBackground)] rounded mr-1'>
               <CheckIcon className="w-3 h-3" aria-hidden="true" />
             </div>
-            <span>{localize(LocalizationKey.dashboardHeaderActionsBarSelectAll)}</span>
+            <span>{l10n.t(LocalizationKey.dashboardHeaderActionsBarSelectAll)}</span>
           </ActionsBarItem>
         </div>
       </div >
 
       {showAlert && (
         <Alert
-          title={`${localize(LocalizationKey.dashboardHeaderActionsBarAlertDeleteTitle)}`}
-          description={localize(LocalizationKey.dashboardHeaderActionsBarAlertDeleteDescription)}
-          okBtnText={localize(LocalizationKey.commonDelete)}
-          cancelBtnText={localize(LocalizationKey.commonCancel)}
+          title={`${l10n.t(LocalizationKey.dashboardHeaderActionsBarAlertDeleteTitle)}`}
+          description={l10n.t(LocalizationKey.dashboardHeaderActionsBarAlertDeleteDescription)}
+          okBtnText={l10n.t(LocalizationKey.commonDelete)}
+          cancelBtnText={l10n.t(LocalizationKey.commonCancel)}
           dismiss={() => setShowAlert(false)}
           trigger={onDeleteConfirm}
         />
